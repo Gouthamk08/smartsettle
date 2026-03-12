@@ -53,12 +53,11 @@ def earliest_slot(channel: str, arrival: int, max_delay: int,
     t = arrival
     while t <= deadline:
         end = t + lat
-        # Count concurrent = intervals that overlap [t, end)
-        concurrent = sum(1 for (s, e) in slots if s < end and e > t)
-        if concurrent < cap:
+        # Find all intervals that overlap [t, end) in one pass
+        overlapping_ends = [e for (s, e) in slots if s < end and e > t]
+        if len(overlapping_ends) < cap:
             return t
         # Jump past the earliest overlapping slot's end to avoid re-scanning
-        overlapping_ends = [e for (s, e) in slots if s < end and e > t]
         t = min(overlapping_ends)
 
     return None  # no valid slot within deadline

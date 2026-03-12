@@ -43,7 +43,8 @@ def optimize():
                 "priority":     int(tx["priority"]),
             })
 
-        assignments = route(cleaned)
+        # route() returns (assignments, estimated_cost), so we unpack it
+        assignments, _ = route(cleaned)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             tx_path  = os.path.join(tmpdir, "transactions.csv")
@@ -103,4 +104,4 @@ if __name__ == "__main__":
     print("   Frontend : http://localhost:5000")
     print("   Health   : http://localhost:5000/api/health")
     print("   Optimize : POST http://localhost:5000/api/optimize\n")
-    app.run(debug=True, port=5001)
+    app.run(debug=True, host='0.0.0.0', port=5000)
