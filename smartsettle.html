@@ -714,27 +714,45 @@ let useFlask = true;   // always Flask — no toggle
 
 let lastResult = null;
 
+// Detect if running locally (File or Live Server) vs Deployed/Flask-served
+const API_BASE = (window.location.protocol === 'file:' || 
+                 ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '5000'))
+                 ? 'http://localhost:5000' : '';
+
 // ── Flask health check ────────────────────────────────────────────────────────
 async function pingFlask() {
   const dot = document.getElementById('flask-dot');
   const msg = document.getElementById('flask-msg');
   dot.style.background = 'var(--neon-orange)';
-  msg.textContent = 'Checking...';
-  try {
-    const res = await fetch('/api/health', { signal: AbortSignal.timeout(3000) });
-    const data = await res.json();
-    if (data.status === 'ok') {
-      dot.style.background = 'var(--neon-green)';
-      dot.style.boxShadow  = '0 0 8px var(--neon-green)';
-      msg.textContent = '✓ Connected — router.py is live';
-      msg.style.color = 'var(--neon-green)';
+  msg.textContent = 'Connecting...';
+  msg.style.color = 'var(--dim)';
+
+  // Retry loop for Render "cold starts" (can take 30-50s)
+  for (let i = 0; i < 30; i++) {
+    try {
+      const res = await fetch(`${API_BASE}/api/health`, { signal: AbortSignal.timeout(3000) });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === 'ok') {
+          dot.style.background = 'var(--neon-green)';
+          dot.style.boxShadow  = '0 0 8px var(--neon-green)';
+          msg.textContent = '✓ Connected — router.py is live';
+          msg.style.color = 'var(--neon-green)';
+          return;
+        }
+      }
+    } catch (e) {
+      // Update text to show activity during long waits
+      if (i > 1) msg.textContent = `Waking up server... (${i})`;
+      await new Promise(r => setTimeout(r, 1500));
     }
-  } catch {
-    dot.style.background = 'var(--neon-red)';
-    dot.style.boxShadow  = '0 0 8px var(--neon-red)';
-    msg.textContent = '✗ Offline — run: python app.py';
-    msg.style.color = 'var(--neon-red)';
   }
+
+  // Final failure state
+  dot.style.background = 'var(--neon-red)';
+  dot.style.boxShadow  = '0 0 8px var(--neon-red)';
+  msg.textContent = '✗ Offline — run: python app.py';
+  msg.style.color = 'var(--neon-red)';
 }
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
@@ -945,7 +963,7 @@ async function runOpt() {
 }
 
 async function runViaFlask() {
-  const res = await fetch('/api/optimize', {
+  const res = await fetch(`${API_BASE}/api/optimize`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ transactions: TXS })
