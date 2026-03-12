@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartSettle — Payment Routing Optimizer</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --neon-cyan:   #00f5ff;
+    --neon-green:  #00ff88;
+    --neon-orange: #ff6b00;
+    --neon-red:    #ff2d55;
+    --neon-purple: #bf5fff;
+    --bg:          #020508;
+    --bg2:         #050d12;
+    --bg3:         #081520;
+    --panel:       rgba(0,245,255,0.04);
+    --border:      rgba(0,245,255,0.15);
+    --text:        #c8e8f0;
+    --dim:         #4a6b78;
+    --mono:        'Share Tech Mono', monospace;
+    --display:     'Orbitron', sans-serif;
+    --body:        'Rajdhani', sans-serif;
+    --text-bright: #ffffff;
+  }
+
+  /* ── LIGHT MODE overrides ── */
+  body.light {
+    --bg:     #f0f4f8;
+    --bg2:    #e4ecf4;
+    --bg3:    #d8e4f0;
+    --panel:  rgba(0,100,160,0.05);
+    --border: rgba(0,100,160,0.18);
+    --text:   #1a2a3a;
+    --dim:    #6a8aaa;
+    --neon-cyan:   #0088bb;
+    --neon-green:  #009955;
+    --neon-orange: #cc5500;
+    --neon-red:    #cc1133;
+    --neon-purple: #7733cc;
+    --text-bright: #0a1a2a;
+  }
+
+  /* light mode: tone down glow effects */
+  body.light .nav-logo      { text-shadow: none; }
+  body.light .ch-name       { text-shadow: none; }
+  body.light .ch-card::before { box-shadow: none; }
+  body.light .ch-bar-f      { box-shadow: none; }
+  body.light .status-dot    { box-shadow: none; }
+  body.light .hero-title .t2::after { opacity: 0.12; }
+  body.light .orb1 { background: rgba(0,136,187,0.08); }
+  body.light .orb2 { background: rgba(0,153,85,0.06); }
+  body.light .orb3 { background: rgba(119,51,204,0.05); }
+  body.light nav   { background: rgba(240,244,248,0.92); }
+  body.light footer{ background: rgba(240,244,248,0.95); }
+  body.light body::before { opacity: 0; }
+
+  /* theme toggle button */
+  .theme-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--panel); border: 1px solid var(--border);
+    color: var(--dim); cursor: pointer; font-size: 1rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; flex-shrink: 0;
+  }
+  .theme-btn:hover { border-color: var(--neon-cyan); color: var(--neon-cyan); background: rgba(0,245,255,0.08); }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { background:var(--bg); color:var(--text); font-family:var(--body); overflow-x:hidden; }
+
+  /* scanlines */
+  body::before {
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:9999;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px);
+  }
+  /* grid */
+  body::after {
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image: linear-gradient(rgba(0,245,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(0,245,255,0.025) 1px, transparent 1px);
+    background-size:60px 60px;
+  }
+
+  /* NAV */
+  nav {
+    position:fixed; top:0; left:0; right:0; z-index:1000;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 48px;
+    background:rgba(2,5,8,0.88); backdrop-filter:blur(20px);
+    border-bottom:1px solid var(--border);
+  }
+  .nav-logo { font-family:var(--display); font-size:0.95rem; font-weight:700; color:var(--neon-cyan); letter-spacing:0.3em; text-shadow:0 0 20px var(--neon-cyan); }
+  .nav-links { display:flex; gap:32px; list-style:none; }
+  .nav-links a { font-family:var(--mono); font-size:0.7rem; color:var(--dim); text-decoration:none; letter-spacing:0.15em; text-transform:uppercase; transition:color 0.2s; }
+  .nav-links a:hover { color:var(--neon-cyan); text-shadow:0 0 10px var(--neon-cyan); }
+  .nav-status { display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:0.68rem; color:var(--neon-green); }
+  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--neon-green); box-shadow:0 0 8px var(--neon-green); animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+
+  /* HERO */
+  #hero {
+    min-height:100vh; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    padding:120px 48px 80px; text-align:center; overflow:hidden; position:relative; z-index:1;
+  }
+  .orb { position:absolute; border-radius:50%; filter:blur(100px); pointer-events:none; }
+  .orb1 { width:700px;height:700px;background:rgba(0,245,255,0.055);top:-150px;left:-250px;animation:floatOrb 14s ease-in-out infinite; }
+  .orb2 { width:500px;height:500px;background:rgba(0,255,136,0.04);bottom:-100px;right:-150px;animation:floatOrb 18s ease-in-out infinite reverse; }
+  .orb3 { width:350px;height:350px;background:rgba(191,95,255,0.035);top:45%;left:55%;animation:floatOrb 11s ease-in-out infinite 4s; }
+  @keyframes floatOrb { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(40px,-30px) scale(1.06)} 66%{transform:translate(-30px,40px) scale(0.94)} }
+
+  /* data flow lines */
+  .flow { position:absolute; top:0; bottom:0; width:1px; background:linear-gradient(to bottom,transparent,var(--neon-cyan),transparent); animation:flowDown 5s ease-in-out infinite; opacity:0; }
+  .flow:nth-child(1){left:15%;animation-delay:0s}
+  .flow:nth-child(2){left:50%;animation-delay:1.8s}
+  .flow:nth-child(3){left:85%;animation-delay:3.6s}
+  @keyframes flowDown { 0%{opacity:0;transform:translateY(-100%)} 20%{opacity:0.5} 80%{opacity:0.5} 100%{opacity:0;transform:translateY(100vh)} }
+
+  .hero-badge {
+    font-family:var(--mono); font-size:0.68rem; letter-spacing:0.3em; text-transform:uppercase;
+    color:var(--neon-green); border:1px solid rgba(0,255,136,0.3); padding:6px 20px;
+    margin-bottom:32px; display:inline-block;
+    text-shadow:0 0 12px var(--neon-green); animation:fadeUp 0.8s ease both;
+  }
+  .hero-title {
+    font-family:var(--display); font-size:clamp(3.5rem,9vw,8rem); font-weight:900;
+    line-height:0.92; letter-spacing:-0.02em; margin-bottom:10px;
+    animation:fadeUp 0.8s ease 0.1s both;
+  }
+  .hero-title .t1 { display:block; color:var(--text-bright); }
+  .hero-title .t2 {
+    display:block; color:transparent;
+    -webkit-text-stroke:1.5px var(--neon-cyan); position:relative;
+  }
+  .hero-title .t2::after {
+    content:attr(data-t); position:absolute; left:0; top:0;
+    color:var(--neon-cyan); -webkit-text-stroke:0;
+    filter:blur(16px); opacity:0.35;
+  }
+  .hero-sub {
+    font-family:var(--body); font-size:clamp(1rem,2vw,1.3rem); font-weight:300;
+    color:var(--dim); max-width:540px; margin:28px auto 48px;
+    line-height:1.65; letter-spacing:0.04em;
+    animation:fadeUp 0.8s ease 0.2s both;
+  }
+  .hero-sub b { color:var(--neon-cyan); font-weight:500; }
+  .hero-ctas { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; animation:fadeUp 0.8s ease 0.3s both; }
+  .btn-primary {
+    font-family:var(--mono); font-size:0.78rem; letter-spacing:0.15em; text-transform:uppercase;
+    text-decoration:none; padding:14px 36px;
+    background:var(--neon-cyan); color:var(--bg); font-weight:700;
+    clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
+    transition:all 0.2s; cursor:pointer; border:none;
+  }
+  .btn-primary:hover { background:var(--text-bright); color:var(--neon-cyan); box-shadow:0 0 35px var(--neon-cyan); transform:translateY(-2px); }
+  .btn-ghost {
+    font-family:var(--mono); font-size:0.78rem; letter-spacing:0.15em; text-transform:uppercase;
+    text-decoration:none; padding:13px 36px; background:transparent;
+    color:var(--neon-cyan); border:1px solid var(--neon-cyan);
+    clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
+    transition:all 0.2s; cursor:pointer;
+  }
+  .btn-ghost:hover { background:rgba(0,245,255,0.09); box-shadow:0 0 22px rgba(0,245,255,0.2); transform:translateY(-2px); }
+
+  /* ticker */
+  .ticker {
+    position:absolute; bottom:0; left:0; right:0;
+    border-top:1px solid var(--border); background:rgba(0,0,0,0.55);
+    height:36px; overflow:hidden; animation:fadeUp 0.8s ease 0.5s both;
+  }
+  .ticker-inner { display:flex; align-items:center; gap:48px; padding:0 24px; height:100%; white-space:nowrap; animation:tick 22s linear infinite; }
+  .ti { font-family:var(--mono); font-size:0.67rem; display:flex; gap:12px; align-items:center; flex-shrink:0; }
+  .tl { color:var(--dim); letter-spacing:0.1em; }
+  .tv { color:var(--neon-cyan); }
+  .ts { color:var(--border); }
+  @keyframes tick { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+
+  /* SECTIONS */
+  section { position:relative; z-index:1; }
+
+  .inner { max-width:1200px; margin:0 auto; padding:120px 48px; }
+
+  .sec-eye { font-family:var(--mono); font-size:0.67rem; color:var(--neon-green); letter-spacing:0.3em; text-transform:uppercase; margin-bottom:12px; }
+  .sec-h {
+    font-family:var(--display); font-size:clamp(1.8rem,4vw,2.8rem); font-weight:700;
+    color:var(--text-bright); line-height:1.1;
+  }
+  .sec-h em { font-style:normal; color:var(--neon-cyan); text-shadow:0 0 20px rgba(0,245,255,0.35); }
+  .sec-head { margin-bottom:64px; display:flex; align-items:flex-end; justify-content:space-between; gap:24px; }
+  .sec-line { flex:1; height:1px; background:linear-gradient(to right,var(--border),transparent); max-width:300px; }
+
+  /* CHANNELS */
+  #channels { background:var(--bg); }
+  .ch-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:2px; }
+  .ch-card {
+    background:var(--panel); border:1px solid var(--border);
+    padding:40px 32px; position:relative; overflow:hidden;
+    transition:all 0.3s; cursor:default;
+  }
+  .ch-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--cc); box-shadow:0 0 20px var(--cc); }
+  .ch-card::after { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at top center,var(--cg),transparent 65%); opacity:0; transition:opacity 0.3s; }
+  .ch-card:hover { transform:translateY(-6px); border-color:var(--cc); }
+  .ch-card:hover::after { opacity:1; }
+  .fast   { --cc:var(--neon-cyan);   --cg:rgba(0,245,255,0.07); }
+  .std    { --cc:var(--neon-green);  --cg:rgba(0,255,136,0.07); }
+  .bulk   { --cc:var(--neon-purple); --cg:rgba(191,95,255,0.07); }
+  .ch-id  { font-family:var(--mono); font-size:0.63rem; color:var(--dim); letter-spacing:0.2em; margin-bottom:10px; }
+  .ch-name { font-family:var(--display); font-size:1.5rem; font-weight:700; color:var(--cc); text-shadow:0 0 18px var(--cc); margin-bottom:32px; }
+  .mrow { display:flex; justify-content:space-between; align-items:baseline; padding-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.05); }
+  .mrow:last-child { border-bottom:none; padding-bottom:0; }
+  .ml { font-family:var(--mono); font-size:0.62rem; color:var(--dim); letter-spacing:0.08em; }
+  .mv { font-family:var(--mono); font-size:1.05rem; color:var(--text-bright); }
+  .mv sub { font-size:0.65rem; color:var(--cc); }
+  .ch-bar { margin-top:28px; height:2px; background:rgba(255,255,255,0.05); }
+  .ch-bar-f { height:100%; background:var(--cc); box-shadow:0 0 8px var(--cc); animation:grow 1.5s ease both; }
+  @keyframes grow { from{width:0} }
+
+  /* ALGORITHM */
+  #algorithm { background:var(--bg2); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+  .algo-grid { display:grid; grid-template-columns:1fr 1fr; gap:72px; align-items:start; margin-top:64px; }
+  .steps { display:flex; flex-direction:column; }
+  .step { display:flex; gap:24px; padding:24px 0; border-bottom:1px solid rgba(0,245,255,0.055); }
+  .step:last-child { border-bottom:none; }
+  .step-n { font-family:var(--display); font-size:2.2rem; font-weight:900; color:rgba(0,245,255,0.1); line-height:1; min-width:52px; flex-shrink:0; transition:color 0.3s,text-shadow 0.3s; }
+  .step:hover .step-n { color:var(--neon-cyan); text-shadow:0 0 20px var(--neon-cyan); }
+  .step-t { font-family:var(--body); font-size:1rem; font-weight:600; color:var(--text-bright); margin-bottom:6px; letter-spacing:0.04em; }
+  .step-d { font-family:var(--body); font-size:0.85rem; color:var(--dim); line-height:1.65; }
+  .step-d code { font-family:var(--mono); font-size:0.76rem; color:var(--neon-cyan); background:rgba(0,245,255,0.08); padding:1px 6px; }
+
+  .formula-panel { background:var(--bg3); border:1px solid var(--border); padding:36px; position:sticky; top:96px; }
+  .fp-title { font-family:var(--mono); font-size:0.65rem; color:var(--neon-green); letter-spacing:0.2em; text-transform:uppercase; margin-bottom:20px; }
+  .fp-block {
+    font-family:var(--mono); font-size:0.8rem; line-height:2.1;
+    background:rgba(0,0,0,0.45); border:1px solid rgba(0,245,255,0.07);
+    padding:20px 24px; margin-bottom:16px;
+  }
+  .fc { color:var(--dim); }
+  .fv { color:var(--neon-cyan); }
+  .fo { color:var(--neon-purple); }
+  .fn { color:var(--neon-green); }
+  .fk { color:var(--neon-orange); }
+  .fp-note { font-size:0.77rem; color:var(--dim); line-height:1.75; border-left:2px solid var(--neon-orange); padding-left:16px; }
+
+  /* DEMO */
+  #demo { background:var(--bg); }
+  .demo-layout { display:grid; grid-template-columns:1fr 1.15fr; gap:28px; margin-top:64px; }
+  .inp-panel { background:var(--panel); border:1px solid var(--border); padding:28px; }
+  .panel-head { font-family:var(--mono); font-size:0.65rem; color:var(--neon-cyan); letter-spacing:0.2em; text-transform:uppercase; margin-bottom:20px; display:flex; justify-content:space-between; }
+  .tx-scroll { overflow-x:auto; margin-bottom:18px; }
+  table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:0.7rem; }
+  thead th { text-align:left; padding:8px 10px; color:var(--dim); letter-spacing:0.08em; border-bottom:1px solid var(--border); font-weight:400; }
+  tbody td { padding:6px 10px; color:var(--text); border-bottom:1px solid rgba(0,245,255,0.04); }
+  tbody tr:hover { background:rgba(0,245,255,0.025); }
+  .add-row { display:grid; grid-template-columns:repeat(5,1fr) auto; gap:6px; margin-bottom:14px; }
+  .di {
+    font-family:var(--mono); font-size:0.7rem;
+    background:rgba(0,0,0,0.5); border:1px solid var(--border);
+    color:var(--text); padding:8px 10px; outline:none; width:100%;
+    transition:border-color 0.2s;
+  }
+  .di:focus { border-color:var(--neon-cyan); }
+  .di::placeholder { color:var(--dim); }
+  .btn-add {
+    font-family:var(--mono); font-size:0.68rem; background:rgba(0,245,255,0.08);
+    border:1px solid var(--neon-cyan); color:var(--neon-cyan);
+    padding:8px 12px; cursor:pointer; transition:background 0.2s; white-space:nowrap; letter-spacing:0.1em;
+  }
+  .btn-add:hover { background:rgba(0,245,255,0.18); }
+  .btn-opt {
+    width:100%; padding:16px; font-family:var(--display); font-size:0.82rem;
+    font-weight:700; letter-spacing:0.2em; text-transform:uppercase;
+    background:linear-gradient(135deg,var(--neon-cyan),var(--neon-green));
+    color:var(--bg); border:none; cursor:pointer;
+    clip-path:polygon(12px 0%,100% 0%,calc(100% - 12px) 100%,0% 100%);
+    transition:all 0.2s; position:relative; overflow:hidden;
+  }
+  .btn-opt:hover { transform:translateY(-2px); filter:brightness(1.08); box-shadow:0 8px 32px rgba(0,245,255,0.28); }
+  .btn-opt:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+  .btn-loader { display:none; position:absolute; inset:0; align-items:center; justify-content:center; background:inherit; }
+  .btn-opt.loading .btn-loader { display:flex; }
+  .btn-opt.loading .btn-txt { opacity:0; }
+  .dots span { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--bg); margin:0 2px; animation:db 1s infinite; }
+  .dots span:nth-child(2){animation-delay:0.15s} .dots span:nth-child(3){animation-delay:0.3s}
+  @keyframes db { 0%,80%,100%{transform:scale(1)} 40%{transform:scale(1.5)} }
+
+  /* results */
+  .results { display:flex; flex-direction:column; gap:16px; }
+  .cost-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .cc { background:var(--panel); border:1px solid var(--border); padding:16px 18px; opacity:0; transform:translateY(8px); transition:all 0.4s; }
+  .cc.vis { opacity:1; transform:translateY(0); }
+  .ccl { font-family:var(--mono); font-size:0.58rem; color:var(--dim); letter-spacing:0.15em; margin-bottom:8px; }
+  .ccv { font-family:var(--display); font-size:1.2rem; font-weight:700; }
+  .cc.tot .ccv { color:var(--neon-cyan); text-shadow:0 0 14px var(--neon-cyan); }
+  .cc.rout .ccv { color:var(--neon-green); }
+  .cc.fail .ccv { color:var(--neon-red); }
+
+  /* gantt */
+  .gantt-wrap { background:var(--panel); border:1px solid var(--border); padding:24px; }
+  .gtt { font-family:var(--mono); font-size:0.62rem; color:var(--neon-cyan); letter-spacing:0.2em; text-transform:uppercase; margin-bottom:18px; }
+  .g-legend { display:flex; gap:18px; margin-bottom:14px; }
+  .gli { display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:0.6rem; color:var(--dim); }
+  .gld { width:8px; height:8px; border-radius:1px; }
+  .g-rows { display:flex; flex-direction:column; gap:10px; }
+  .g-row { display:flex; gap:12px; align-items:center; }
+  .g-lbl { font-family:var(--mono); font-size:0.6rem; color:var(--dim); width:76px; flex-shrink:0; }
+  .g-tl { flex:1; height:24px; background:rgba(0,0,0,0.4); border:1px solid rgba(0,245,255,0.06); position:relative; }
+  .g-blk {
+    position:absolute; top:2px; bottom:2px; border-radius:1px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-size:0.5rem; overflow:hidden;
+    cursor:pointer; transition:filter 0.15s;
+  }
+  .g-blk:hover { filter:brightness(1.4); z-index:10; }
+  .tip {
+    position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%);
+    background:rgba(2,5,8,0.95); border:1px solid var(--neon-cyan);
+    padding:8px 12px; white-space:nowrap; font-family:var(--mono); font-size:0.6rem;
+    color:var(--text); pointer-events:none; opacity:0; z-index:100; transition:opacity 0.15s;
+  }
+  .g-blk:hover .tip { opacity:1; }
+
+  /* assignments */
+  .asgn-wrap { background:var(--panel); border:1px solid var(--border); padding:24px; max-height:240px; overflow-y:auto; }
+  .asgn-wrap::-webkit-scrollbar { width:3px; }
+  .asgn-wrap::-webkit-scrollbar-thumb { background:var(--border); }
+  .badge { font-family:var(--mono); font-size:0.58rem; letter-spacing:0.1em; padding:2px 8px; border-radius:1px; }
+  .br { background:rgba(0,255,136,0.1); color:var(--neon-green); border:1px solid rgba(0,255,136,0.25); }
+  .bf { background:rgba(255,45,85,0.1);  color:var(--neon-red);   border:1px solid rgba(255,45,85,0.25); }
+  .empty { text-align:center; padding:36px; font-family:var(--mono); font-size:0.72rem; color:var(--dim); letter-spacing:0.1em; }
+  .ei { font-size:1.8rem; margin-bottom:10px; opacity:0.25; }
+
+  /* reveal */
+  .rv { opacity:0; transform:translateY(28px); transition:opacity 0.7s ease, transform 0.7s ease; }
+  .rv.vis { opacity:1; transform:translateY(0); }
+
+  /* footer */
+  footer {
+    border-top:1px solid var(--border); padding:48px;
+    display:flex; justify-content:space-between; align-items:center;
+    position:relative; z-index:1; background:rgba(2,5,8,0.9);
+  }
+  .fb { font-family:var(--display); font-size:0.85rem; color:var(--neon-cyan); letter-spacing:0.3em; }
+  .fm { font-family:var(--mono); font-size:0.63rem; color:var(--dim); text-align:right; line-height:1.9; }
+
+  @media(max-width:900px){
+    nav { padding:14px 20px; }
+    .nav-links { display:none; }
+    .inner { padding:80px 20px; }
+    .ch-grid,.algo-grid,.demo-layout,.cost-cards { grid-template-columns:1fr; }
+    .sec-head { flex-direction:column; align-items:flex-start; }
+    footer { flex-direction:column; gap:20px; text-align:center; padding:32px 20px; }
+    .fm { text-align:center; }
+    .add-row { grid-template-columns:1fr 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">SMARTSETTLE</div>
+  <ul class="nav-links">
+    <li><a href="#channels">Channels</a></li>
+    <li><a href="#algorithm">Algorithm</a></li>
+    <li><a href="#demo">Live Demo</a></li>
+  </ul>
+  <div style="display:flex;align-items:center;gap:16px">
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark mode">🌙</button>
+    <div class="nav-status"><div class="status-dot"></div>SYSTEM ONLINE</div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+  <div class="flow"></div><div class="flow"></div><div class="flow"></div>
+
+  <div class="hero-badge">⬡ Fintech Track &nbsp;·&nbsp; Payment Systems</div>
+
+  <h1 class="hero-title">
+    <span class="t1">SMART</span>
+    <span class="t2" data-t="SETTLE">SETTLE</span>
+  </h1>
+
+  <p class="hero-sub">
+    Intelligent payment routing optimizer. Assigns transactions to
+    <b>FAST</b>, <b>STANDARD</b>, or <b>BULK</b> settlement channels —
+    minimizing total system cost in real time.
+  </p>
+
+  <div class="hero-ctas">
+    <a href="#demo" class="btn-primary">⚡ Run Live Demo</a>
+    <a href="#algorithm" class="btn-ghost">View Algorithm</a>
+  </div>
+
+  <div class="ticker">
+    <div class="ticker-inner">
+      <div class="ti"><span class="tl">CHANNEL_F</span><span class="tv">₹5.00 · 1 min · Cap 2</span></div><span class="ts">|</span>
+      <div class="ti"><span class="tl">CHANNEL_S</span><span class="tv">₹1.00 · 3 min · Cap 4</span></div><span class="ts">|</span>
+      <div class="ti"><span class="tl">CHANNEL_B</span><span class="tv">₹0.20 · 10 min · Cap 10</span></div><span class="ts">|</span>
+      <div class="ti"><span class="tl">DELAY PENALTY</span><span class="tv">P = 0.001 × amount × delay</span></div><span class="ts">|</span>
+      <div class="ti"><span class="tl">FAILURE PENALTY</span><span class="tv">F = 0.5 × amount</span></div><span class="ts">|</span>
+      <div class="ti"><span class="tl">OBJECTIVE</span><span class="tv">Minimize total_system_cost</span></div><span class="ts">|</span>
+      <div class="ti"><span class="tl">CHANNEL_F</span><span class="tv">₹5.00 · 1 min · Cap 2</span></div><span class="ts">|</span>
+      <div class="ti"><span class="tl">CHANNEL_S</span><span class="tv">₹1.00 · 3 min · Cap 4</span></div><span class="ts">|</span>
+      <div class="ti"><span class="tl">CHANNEL_B</span><span class="tv">₹0.20 · 10 min · Cap 10</span></div><span class="ts">|</span>
+      <div class="ti"><span class="tl">DELAY PENALTY</span><span class="tv">P = 0.001 × amount × delay</span></div><span class="ts">|</span>
+      <div class="ti"><span class="tl">FAILURE PENALTY</span><span class="tv">F = 0.5 × amount</span></div><span class="ts">|</span>
+      <div class="ti"><span class="tl">OBJECTIVE</span><span class="tv">Minimize total_system_cost</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- CHANNELS -->
+<section id="channels">
+  <div class="inner">
+    <div class="sec-head rv">
+      <div><div class="sec-eye">// 01 · Settlement Channels</div><h2 class="sec-h">Three channels.<br><em>One optimal choice.</em></h2></div>
+      <div class="sec-line"></div>
+    </div>
+    <div class="ch-grid">
+      <div class="ch-card fast rv">
+        <div class="ch-id">CHANNEL_F</div>
+        <div class="ch-name">FAST</div>
+        <div class="mrow"><span class="ml">FEE PER TX</span><span class="mv">₹5<sub>.00</sub></span></div>
+        <div class="mrow"><span class="ml">LATENCY</span><span class="mv">1<sub>min</sub></span></div>
+        <div class="mrow"><span class="ml">CONCURRENT CAP</span><span class="mv">2<sub>slots</sub></span></div>
+        <div class="ch-bar"><div class="ch-bar-f" style="width:20%"></div></div>
+      </div>
+      <div class="ch-card std rv" style="transition-delay:0.1s">
+        <div class="ch-id">CHANNEL_S</div>
+        <div class="ch-name">STANDARD</div>
+        <div class="mrow"><span class="ml">FEE PER TX</span><span class="mv">₹1<sub>.00</sub></span></div>
+        <div class="mrow"><span class="ml">LATENCY</span><span class="mv">3<sub>min</sub></span></div>
+        <div class="mrow"><span class="ml">CONCURRENT CAP</span><span class="mv">4<sub>slots</sub></span></div>
+        <div class="ch-bar"><div class="ch-bar-f" style="width:45%"></div></div>
+      </div>
+      <div class="ch-card bulk rv" style="transition-delay:0.2s">
+        <div class="ch-id">CHANNEL_B</div>
+        <div class="ch-name">BULK</div>
+        <div class="mrow"><span class="ml">FEE PER TX</span><span class="mv">₹0<sub>.20</sub></span></div>
+        <div class="mrow"><span class="ml">LATENCY</span><span class="mv">10<sub>min</sub></span></div>
+        <div class="mrow"><span class="ml">CONCURRENT CAP</span><span class="mv">10<sub>slots</sub></span></div>
+        <div class="ch-bar"><div class="ch-bar-f" style="width:100%"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ALGORITHM -->
+<section id="algorithm">
+  <div class="inner">
+    <div class="sec-head rv">
+      <div><div class="sec-eye">// 02 · Algorithm Design</div><h2 class="sec-h">Cost-aware<br><em>greedy routing.</em></h2></div>
+      <div class="sec-line"></div>
+    </div>
+    <div class="algo-grid">
+      <div class="steps rv">
+        <div class="step">
+          <div class="step-n">01</div>
+          <div><div class="step-t">Priority Scoring & Sort</div>
+          <div class="step-d">Each transaction is scored: <code>priority×10 + urgency×8 + value×2</code>. Tight deadlines and high-value transactions are scheduled first to prevent costly delays.</div></div>
+        </div>
+        <div class="step">
+          <div class="step-n">02</div>
+          <div><div class="step-t">Earliest Slot Search</div>
+          <div class="step-d">For each channel, find the earliest <code>start_time ≥ arrival_time</code> within deadline <code>arrival + max_delay</code>, respecting concurrent capacity via interval overlap <code>[start, start+lat)</code>.</div></div>
+        </div>
+        <div class="step">
+          <div class="step-n">03</div>
+          <div><div class="step-t">Minimum Cost Selection</div>
+          <div class="step-d">All three channels are evaluated in parallel. The channel minimizing <code>fee + 0.001×amount×delay</code> wins. The slot is booked immediately.</div></div>
+        </div>
+        <div class="step">
+          <div class="step-n">04</div>
+          <div><div class="step-t">Graceful Failure Check</div>
+          <div class="step-d">If the best routing cost exceeds <code>0.5×amount</code>, the transaction is explicitly marked failed — because sometimes failing is cheaper than routing with extreme delays.</div></div>
+        </div>
+      </div>
+
+      <div class="formula-panel rv" style="transition-delay:0.15s">
+        <div class="fp-title">// cost_model.py</div>
+        <div class="fp-block">
+<span class="fc"># Per settled transaction</span>
+<span class="fv">delay</span>         <span class="fo">=</span> <span class="fk">start_time</span> <span class="fo">−</span> <span class="fk">arrival_time</span>
+<span class="fv">delay_penalty</span> <span class="fo">=</span> <span class="fn">0.001</span> <span class="fo">×</span> amount <span class="fo">×</span> delay
+<span class="fv">tx_cost</span>       <span class="fo">=</span> channel_fee <span class="fo">+</span> delay_penalty
+
+<span class="fc"># Per failed transaction</span>
+<span class="fv">fail_cost</span>     <span class="fo">=</span> <span class="fn">0.5</span> <span class="fo">×</span> amount
+
+<span class="fc"># Judge metric (minimize this)</span>
+<span class="fv">total_cost</span>    <span class="fo">=</span> Σ(tx_cost) <span class="fo">+</span> Σ(fail_cost)
+        </div>
+        <div class="fp-block">
+<span class="fc"># Sort key (descending)</span>
+<span class="fv">score</span>  <span class="fo">=</span> priority    <span class="fo">×</span> <span class="fn">10</span>
+       <span class="fo">+</span> (<span class="fn">1</span><span class="fo">/</span>max_delay) <span class="fo">×</span>  <span class="fn">8</span>
+       <span class="fo">+</span> (amount<span class="fo">/</span><span class="fn">20000</span>) <span class="fo">×</span>  <span class="fn">2</span>
+        </div>
+        <div class="fp-note">
+          Complexity: <strong style="color:var(--text-bright)">O(n log n)</strong> sort + O(n·k·c) slot search<br>
+          k = 3 channels &nbsp;|&nbsp; c = concurrent slots<br>
+          Handles 1000-tx stress datasets in milliseconds.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section id="demo">
+  <div class="inner">
+    <div class="sec-head rv">
+      <div><div class="sec-eye">// 03 · Live Optimizer</div><h2 class="sec-h">Upload CSV.<br><em>Get results.</em></h2></div>
+      <div class="sec-line"></div>
+    </div>
+
+    <div class="demo-layout">
+      <!-- INPUT -->
+      <div class="inp-panel rv">
+
+        <!-- MODE TABS -->
+        <div style="display:flex;gap:0;margin-bottom:20px;border:1px solid var(--border)">
+          <button id="tab-csv" onclick="switchTab('csv')" style="flex:1;padding:10px;font-family:var(--mono);font-size:0.68rem;letter-spacing:0.12em;border:none;cursor:pointer;background:var(--neon-cyan);color:var(--bg);transition:all 0.2s">📁 CSV UPLOAD</button>
+          <button id="tab-manual" onclick="switchTab('manual')" style="flex:1;padding:10px;font-family:var(--mono);font-size:0.68rem;letter-spacing:0.12em;border:none;cursor:pointer;background:rgba(0,245,255,0.07);color:var(--dim);transition:all 0.2s">✏ MANUAL INPUT</button>
+        </div>
+
+        <!-- CSV UPLOAD MODE -->
+        <div id="mode-csv">
+          <!-- Drop zone -->
+          <div id="drop-zone" onclick="document.getElementById('csv-file').click()"
+            style="border:2px dashed var(--border);padding:40px 20px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:16px;position:relative">
+            <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="handleFile(this.files[0])">
+            <div style="font-size:2rem;margin-bottom:12px;opacity:0.4">⬆</div>
+            <div style="font-family:var(--mono);font-size:0.75rem;color:var(--neon-cyan);letter-spacing:0.15em;margin-bottom:6px">DROP transactions.csv HERE</div>
+            <div style="font-family:var(--mono);font-size:0.62rem;color:var(--dim)">or click to browse</div>
+            <div id="file-name" style="font-family:var(--mono);font-size:0.7rem;color:var(--neon-green);margin-top:12px;display:none"></div>
+          </div>
+
+          <!-- CSV format hint -->
+          <div style="background:rgba(0,0,0,0.4);border:1px solid rgba(0,245,255,0.07);padding:14px 16px;margin-bottom:16px">
+            <div style="font-family:var(--mono);font-size:0.6rem;color:var(--dim);letter-spacing:0.1em;margin-bottom:8px">EXPECTED FORMAT</div>
+            <div style="font-family:var(--mono);font-size:0.68rem;color:var(--neon-green);line-height:1.8">
+              tx_id,amount,arrival_time,max_delay,priority<br>
+              T1,10000,0,10,5<br>
+              T2,500,1,30,2<br>
+              <span style="color:var(--dim)">...</span>
+            </div>
+          </div>
+
+          <!-- Flask status indicator -->
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:12px 14px;border:1px solid rgba(0,255,136,0.2);background:rgba(0,255,136,0.03)">
+            <div id="flask-dot" style="width:6px;height:6px;border-radius:50%;background:var(--dim);flex-shrink:0"></div>
+            <div>
+              <div style="font-family:var(--mono);font-size:0.65rem;color:var(--text);letter-spacing:0.1em">FLASK BACKEND (router.py)</div>
+              <div id="flask-msg" style="font-family:var(--mono);font-size:0.58rem;color:var(--dim);margin-top:2px">Run: python app.py</div>
+            </div>
+            <button onclick="pingFlask()" style="margin-left:auto;font-family:var(--mono);font-size:0.58rem;letter-spacing:0.1em;background:none;border:1px solid var(--border);color:var(--dim);padding:4px 10px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='var(--neon-cyan)';this.style.color='var(--neon-cyan)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--dim)'">CHECK</button>
+          </div>
+
+          <div class="panel-head" style="margin-bottom:10px"><span>Loaded Transactions</span><span id="tx-count" style="color:var(--dim)">0 TXS</span></div>
+          <div class="tx-scroll" style="max-height:180px;overflow-y:auto;margin-bottom:16px">
+            <table id="tx-table">
+              <thead><tr><th>TX_ID</th><th>AMOUNT</th><th>ARRIVE</th><th>MAX_DLY</th><th>PRI</th><th></th></tr></thead>
+              <tbody id="tx-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- MANUAL INPUT MODE -->
+        <div id="mode-manual" style="display:none">
+          <div class="panel-head" style="margin-bottom:12px"><span>Transactions</span><span id="tx-count-m" style="color:var(--dim)">8 TXS</span></div>
+          <div class="tx-scroll" style="max-height:220px;overflow-y:auto;margin-bottom:14px">
+            <table>
+              <thead><tr><th>TX_ID</th><th>AMOUNT</th><th>ARRIVE</th><th>MAX_DLY</th><th>PRI</th><th></th></tr></thead>
+              <tbody id="tx-body-m"></tbody>
+            </table>
+          </div>
+          <div class="add-row" style="margin-bottom:14px">
+            <input class="di" id="in-id"     placeholder="ID">
+            <input class="di" id="in-amt"    placeholder="Amount" type="number" value="5000">
+            <input class="di" id="in-arrive" placeholder="Arrive" type="number" value="0">
+            <input class="di" id="in-delay"  placeholder="MaxDly" type="number" value="15">
+            <input class="di" id="in-pri"    placeholder="Pri 1-5" type="number" value="3" min="1" max="5">
+            <button class="btn-add" onclick="addTx()">+ADD</button>
+          </div>
+        </div>
+
+        <button class="btn-opt" id="run-btn" onclick="runOpt()">
+          <span class="btn-txt">⚡ OPTIMIZE ROUTING</span>
+          <span class="btn-loader"><span class="dots"><span></span><span></span><span></span></span></span>
+        </button>
+      </div>
+
+      <!-- RESULTS -->
+      <div class="results">
+        <div class="cost-cards">
+          <div class="cc tot" id="cc-tot"><div class="ccl">TOTAL COST</div><div class="ccv" id="v-tot">—</div></div>
+          <div class="cc rout" id="cc-rout"><div class="ccl">ROUTED COST</div><div class="ccv" id="v-rout">—</div></div>
+          <div class="cc fail" id="cc-fail"><div class="ccl">FAILURE COST</div><div class="ccv" id="v-fail">—</div></div>
+        </div>
+
+        <div class="gantt-wrap rv" style="transition-delay:0.1s">
+          <div class="gtt">// Channel Timeline</div>
+          <div class="g-legend">
+            <div class="gli"><div class="gld" style="background:var(--neon-cyan)"></div>FAST</div>
+            <div class="gli"><div class="gld" style="background:var(--neon-green)"></div>STANDARD</div>
+            <div class="gli"><div class="gld" style="background:var(--neon-purple)"></div>BULK</div>
+          </div>
+          <div class="g-rows" id="gantt"></div>
+          <div class="empty" id="gantt-empty"><div class="ei">◈</div>Run optimizer to see timeline</div>
+        </div>
+
+        <div class="asgn-wrap rv" style="transition-delay:0.2s">
+          <div class="panel-head" style="margin-bottom:12px">
+            <span>Assignments</span>
+            <button id="dl-btn" onclick="downloadJSON()" style="display:none;font-family:var(--mono);font-size:0.6rem;letter-spacing:0.1em;background:rgba(0,255,136,0.1);border:1px solid var(--neon-green);color:var(--neon-green);padding:4px 12px;cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='rgba(0,255,136,0.2)'" onmouseout="this.style.background='rgba(0,255,136,0.1)'">⬇ submission.json</button>
+          </div>
+          <div class="empty" id="asgn-empty"><div class="ei">◉</div>Awaiting optimization</div>
+          <table id="asgn-table" style="display:none">
+            <thead><tr><th>TX_ID</th><th>CHANNEL</th><th>START</th><th>DELAY</th><th>COST</th><th>STATUS</th></tr></thead>
+            <tbody id="asgn-body"></tbody>
+          </table>
+        </div>
+
+        <!-- JSON OUTPUT PANEL -->
+        <div id="json-panel" class="rv" style="display:none;transition-delay:0.3s;background:var(--bg3);border:1px solid var(--border)">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-family:var(--mono);font-size:0.65rem;color:var(--neon-cyan);letter-spacing:0.2em;text-transform:uppercase">// submission.json</span>
+              <span id="json-lines" style="font-family:var(--mono);font-size:0.58rem;color:var(--dim)"></span>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button onclick="copyJSON()" id="copy-btn" style="font-family:var(--mono);font-size:0.6rem;letter-spacing:0.1em;background:rgba(0,245,255,0.07);border:1px solid var(--border);color:var(--dim);padding:5px 12px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='var(--neon-cyan)';this.style.color='var(--neon-cyan)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--dim)'">⎘ COPY</button>
+              <button onclick="downloadJSON()" style="font-family:var(--mono);font-size:0.6rem;letter-spacing:0.1em;background:rgba(0,255,136,0.1);border:1px solid var(--neon-green);color:var(--neon-green);padding:5px 12px;cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='rgba(0,255,136,0.2)'" onmouseout="this.style.background='rgba(0,255,136,0.1)'">⬇ DOWNLOAD</button>
+            </div>
+          </div>
+          <pre id="json-output" style="font-family:var(--mono);font-size:0.72rem;line-height:1.8;padding:20px;max-height:340px;overflow-y:auto;overflow-x:auto;color:var(--text);white-space:pre;"></pre>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div>
+    <div class="fb">SMARTSETTLE</div>
+    <div style="font-family:var(--mono);font-size:0.62rem;color:var(--dim);margin-top:6px">Payment Routing &amp; Settlement Optimizer</div>
+  </div>
+  <div class="fm">
+    <div>Track: Fintech / Payments</div>
+    <div>Algorithm: Cost-aware Greedy · O(n log n)</div>
+    <div style="margin-top:4px;color:var(--neon-cyan)">Zero constraint violations guaranteed</div>
+  </div>
+</footer>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let TXS = [
+  {tx_id:'T1',amount:10000,arrival_time:0, max_delay:10,priority:5},
+  {tx_id:'T2',amount:500,  arrival_time:1, max_delay:30,priority:2},
+  {tx_id:'T3',amount:2000, arrival_time:2, max_delay:5, priority:4},
+  {tx_id:'T4',amount:15000,arrival_time:3, max_delay:2, priority:5},
+  {tx_id:'T5',amount:250,  arrival_time:5, max_delay:60,priority:1},
+  {tx_id:'T6',amount:8000, arrival_time:6, max_delay:8, priority:4},
+  {tx_id:'T7',amount:1200, arrival_time:7, max_delay:3, priority:3},
+  {tx_id:'T8',amount:600,  arrival_time:7, max_delay:15,priority:2},
+];
+let useFlask = true;   // always Flask — no toggle
+
+let lastResult = null;
+
+// ── Flask health check ────────────────────────────────────────────────────────
+async function pingFlask() {
+  const dot = document.getElementById('flask-dot');
+  const msg = document.getElementById('flask-msg');
+  dot.style.background = 'var(--neon-orange)';
+  msg.textContent = 'Checking...';
+  try {
+    const res = await fetch('http://localhost:5000/api/health', { signal: AbortSignal.timeout(3000) });
+    const data = await res.json();
+    if (data.status === 'ok') {
+      dot.style.background = 'var(--neon-green)';
+      dot.style.boxShadow  = '0 0 8px var(--neon-green)';
+      msg.textContent = '✓ Connected — router.py is live';
+      msg.style.color = 'var(--neon-green)';
+    }
+  } catch {
+    dot.style.background = 'var(--neon-red)';
+    dot.style.boxShadow  = '0 0 8px var(--neon-red)';
+    msg.textContent = '✗ Offline — run: python app.py';
+    msg.style.color = 'var(--neon-red)';
+  }
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  const isCSV = tab === 'csv';
+  document.getElementById('mode-csv').style.display    = isCSV ? 'block' : 'none';
+  document.getElementById('mode-manual').style.display = isCSV ? 'none'  : 'block';
+  document.getElementById('tab-csv').style.background    = isCSV ? 'var(--neon-cyan)' : 'rgba(0,245,255,0.07)';
+  document.getElementById('tab-csv').style.color         = isCSV ? 'var(--bg)'        : 'var(--dim)';
+  document.getElementById('tab-manual').style.background = isCSV ? 'rgba(0,245,255,0.07)' : 'var(--neon-cyan)';
+  document.getElementById('tab-manual').style.color      = isCSV ? 'var(--dim)'           : 'var(--bg)';
+  if (!isCSV) renderManualTable();
+}
+
+// ── CSV parsing ───────────────────────────────────────────────────────────────
+function handleFile(file) {
+  if (!file) return;
+  document.getElementById('file-name').style.display = 'block';
+  document.getElementById('file-name').textContent   = '✓ ' + file.name;
+  document.getElementById('drop-zone').style.borderColor = 'var(--neon-green)';
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const parsed = parseCSV(e.target.result);
+    if (parsed.error) {
+      alert('CSV Error: ' + parsed.error);
+      return;
+    }
+    TXS = parsed;
+    renderCSVTable();
+  };
+  reader.readAsText(file);
+}
+
+// drag & drop
+document.addEventListener('DOMContentLoaded', () => {
+  const dz = document.getElementById('drop-zone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.style.borderColor='var(--neon-cyan)'; dz.style.background='rgba(0,245,255,0.04)'; });
+  dz.addEventListener('dragleave', () => { dz.style.borderColor='var(--border)'; dz.style.background=''; });
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.style.borderColor='var(--border)'; dz.style.background='';
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith('.csv')) handleFile(file);
+    else alert('Please drop a .csv file');
+  });
+  renderCSVTable();  // show defaults
+  renderManualTable();
+  pingFlask();       // auto-check Flask on load
+});
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return { error: 'Empty file' };
+  const header = lines[0].toLowerCase().split(',').map(h => h.trim());
+  const required = ['tx_id','amount','arrival_time','max_delay','priority'];
+  for (const r of required) {
+    if (!header.includes(r)) return { error: `Missing column: ${r}` };
+  }
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const vals = lines[i].split(',');
+    const row = {};
+    header.forEach((h, j) => row[h] = (vals[j]||'').trim());
+    if (!row.tx_id) continue;
+    rows.push({
+      tx_id:        row.tx_id,
+      amount:       parseFloat(row.amount) || 0,
+      arrival_time: parseInt(row.arrival_time) || 0,
+      max_delay:    parseInt(row.max_delay) || 1,
+      priority:     Math.min(5, Math.max(1, parseInt(row.priority) || 1)),
+    });
+  }
+  if (!rows.length) return { error: 'No data rows found' };
+  return rows;
+}
+
+// ── Table renders ─────────────────────────────────────────────────────────────
+function renderCSVTable() {
+  document.getElementById('tx-body').innerHTML = TXS.map((t,i) => `
+    <tr>
+      <td style="color:var(--neon-cyan)">${t.tx_id}</td>
+      <td>₹${t.amount.toLocaleString()}</td>
+      <td>${t.arrival_time}</td>
+      <td>${t.max_delay}</td>
+      <td>${'★'.repeat(t.priority)}<span style="color:var(--dim)">${'★'.repeat(5-t.priority)}</span></td>
+      <td><button onclick="rmTxCSV(${i})" style="background:none;border:none;color:var(--dim);cursor:pointer">✕</button></td>
+    </tr>`).join('');
+  document.getElementById('tx-count').textContent = `${TXS.length} TXS`;
+}
+
+function renderManualTable() {
+  document.getElementById('tx-body-m').innerHTML = TXS.map((t,i) => `
+    <tr>
+      <td style="color:var(--neon-cyan)">${t.tx_id}</td>
+      <td>₹${t.amount.toLocaleString()}</td>
+      <td>${t.arrival_time}</td>
+      <td>${t.max_delay}</td>
+      <td>${'★'.repeat(t.priority)}<span style="color:var(--dim)">${'★'.repeat(5-t.priority)}</span></td>
+      <td><button onclick="rmTxCSV(${i}); renderManualTable()" style="background:none;border:none;color:var(--dim);cursor:pointer">✕</button></td>
+    </tr>`).join('');
+  document.getElementById('tx-count-m').textContent = `${TXS.length} TXS`;
+  const max = Math.max(...TXS.map(t => parseInt(t.tx_id.replace(/\D/g,''))||0), 8);
+  document.getElementById('in-id').value = `T${max+1}`;
+}
+
+function rmTxCSV(i) { TXS.splice(i,1); renderCSVTable(); renderManualTable(); }
+
+function addTx() {
+  const id = document.getElementById('in-id').value.trim();
+  if (!id || TXS.find(t => t.tx_id === id)) return;
+  TXS.push({
+    tx_id: id,
+    amount:       parseFloat(document.getElementById('in-amt').value)    || 1000,
+    arrival_time: parseInt(document.getElementById('in-arrive').value)   || 0,
+    max_delay:    parseInt(document.getElementById('in-delay').value)    || 10,
+    priority: Math.min(5, Math.max(1, parseInt(document.getElementById('in-pri').value) || 3))
+  });
+  renderManualTable();
+}
+
+// ── Constants (exact mirror of router.py) ────────────────────────────────────
+const FEE={Channel_F:5,Channel_S:1,Channel_B:0.2};
+const LAT={Channel_F:1,Channel_S:3,Channel_B:10};
+const CAP={Channel_F:2,Channel_S:4,Channel_B:10};
+const CHS=['Channel_F','Channel_S','Channel_B'];
+const CHC={Channel_F:'var(--neon-cyan)',Channel_S:'var(--neon-green)',Channel_B:'var(--neon-purple)'};
+const P=0.001,F=0.5;
+
+// ── Algorithm (mirrors router.py exactly) ────────────────────────────────────
+function score(tx){ return tx.priority*10+(1/Math.max(tx.max_delay,1))*8+(tx.amount/20000)*2; }
+
+function overlap(s,e,t,lat){ const end=t+lat; return s<end&&e>t; }
+
+function earliest(ch,arrival,maxD,booked){
+  const lat=LAT[ch],cap=CAP[ch],slots=booked[ch]||[],dl=arrival+maxD;
+  let t=arrival;
+  while(t<=dl){
+    const end=t+lat;
+    const c=slots.filter(([s,e])=>overlap(s,e,t,lat)).length;
+    if(c<cap)return t;
+    const ends=slots.filter(([s,e])=>overlap(s,e,t,lat)).map(([s,e])=>e);
+    t=Math.min(...ends);
+  }
+  return null;
+}
+
+function optimize(){
+  const sorted=[...TXS].sort((a,b)=>score(b)-score(a));
+  const booked={Channel_F:[],Channel_S:[],Channel_B:[]};
+  const out=[]; let tot=0,rout=0,fail=0;
+  for(const tx of sorted){
+    const fc=F*tx.amount;
+    let bc=Infinity,bch=null,bs=null;
+    for(const ch of CHS){
+      const sl=earliest(ch,tx.arrival_time,tx.max_delay,booked);
+      if(sl===null)continue;
+      const c=FEE[ch]+P*tx.amount*(sl-tx.arrival_time);
+      if(c<bc){bc=c;bch=ch;bs=sl;}
+    }
+    if(bch===null||fc<bc){
+      out.push({tx_id:tx.tx_id,failed:true,_cost:fc,_amt:tx.amount});
+      fail+=fc;tot+=fc;
+    } else {
+      booked[bch].push([bs,bs+LAT[bch]]);
+      const delay=bs-tx.arrival_time;
+      out.push({tx_id:tx.tx_id,channel_id:bch,start_time:bs,_delay:delay,_cost:bc,_settle:bs+LAT[bch],_amt:tx.amount});
+      rout+=bc;tot+=bc;
+    }
+  }
+  return {assignments:out, tot, rout, fail};
+}
+
+// ── Run ───────────────────────────────────────────────────────────────────────
+async function runOpt() {
+  if (!TXS.length) { alert('No transactions loaded. Upload a CSV or add rows manually.'); return; }
+  const btn = document.getElementById('run-btn');
+  btn.classList.add('loading'); btn.disabled = true;
+
+  try {
+    await runViaFlask();
+  } catch(err) {
+    // Show a friendly inline error instead of a bare alert
+    const dot = document.getElementById('flask-dot');
+    const msg = document.getElementById('flask-msg');
+    dot.style.background = 'var(--neon-red)';
+    dot.style.boxShadow  = '0 0 8px var(--neon-red)';
+    msg.textContent = '✗ ' + err.message;
+    msg.style.color = 'var(--neon-red)';
+    // scroll the status into view
+    dot.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } finally {
+    btn.classList.remove('loading'); btn.disabled = false;
+  }
+}
+
+async function runViaFlask() {
+  const res = await fetch('http://localhost:5000/api/optimize', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ transactions: TXS })
+  }).catch(() => { throw new Error('Cannot reach app.py — run: python app.py'); });
+
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+
+  // map Flask response shape to internal shape
+  const assignments = data.detail.map(d => ({
+    tx_id:      d.tx_id,
+    failed:     d.status === 'failed',
+    channel_id: d.channel !== 'FAILED' ? d.channel : null,
+    start_time: d.start_time,
+    _delay:     d.delay  ?? 0,
+    _cost:      d.cost,
+    _settle:    d.settle_time,
+    _amt:       d.amount,
+  }));
+
+  lastResult = {
+    assignments,
+    tot: data.total_cost,
+    rout: data.routed_cost,
+    fail: data.failure_cost,
+  };
+  renderCosts(lastResult);
+  renderGantt(assignments);
+  renderAsgn(assignments);
+  renderJSON(assignments);
+  document.getElementById('dl-btn').style.display = 'inline-block';
+
+  if (data.violations && data.violations.length) {
+    console.warn('Violations:', data.violations);
+  }
+}
+
+// ── JSON output panel ─────────────────────────────────────────────────────────
+function buildPayload(assignments) {
+  return {
+    assignments: assignments.map(a => a.failed
+      ? { tx_id: a.tx_id, channel_id: null, start_time: null, failed: true }
+      : { tx_id: a.tx_id, channel_id: a.channel_id, start_time: a.start_time }
+    ),
+    total_system_cost_estimate: parseFloat((lastResult.tot || 0).toFixed(4))
+  };
+}
+
+function syntaxHighlight(json) {
+  return json
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, match => {
+      if (/^"/.test(match)) {
+        if (/:$/.test(match)) return `<span style="color:var(--neon-cyan)">${match}</span>`;
+        // colour by content
+        if (match.includes('Channel_F')) return `<span style="color:var(--neon-cyan)">${match}</span>`;
+        if (match.includes('Channel_S')) return `<span style="color:var(--neon-green)">${match}</span>`;
+        if (match.includes('Channel_B')) return `<span style="color:var(--neon-purple)">${match}</span>`;
+        return `<span style="color:var(--neon-orange)">${match}</span>`;
+      }
+      if (/true/.test(match)) return `<span style="color:var(--neon-red)">${match}</span>`;
+      if (/null/.test(match)) return `<span style="color:var(--dim)">${match}</span>`;
+      return `<span style="color:var(--neon-green)">${match}</span>`;
+    });
+}
+
+function renderJSON(assignments) {
+  const payload  = buildPayload(assignments);
+  const jsonStr  = JSON.stringify(payload, null, 2);
+  const lines    = jsonStr.split('\n').length;
+  const panel    = document.getElementById('json-panel');
+  const pre      = document.getElementById('json-output');
+  const lineInfo = document.getElementById('json-lines');
+
+  panel.style.display = 'block';
+  // small delay so panel animates in
+  setTimeout(() => panel.classList.add('vis'), 10);
+  pre.innerHTML   = syntaxHighlight(jsonStr);
+  lineInfo.textContent = `${lines} lines · ${assignments.length} assignments`;
+}
+
+function copyJSON() {
+  if (!lastResult) return;
+  const payload = buildPayload(lastResult.assignments);
+  navigator.clipboard.writeText(JSON.stringify(payload, null, 2)).then(() => {
+    const btn = document.getElementById('copy-btn');
+    const orig = btn.textContent;
+    btn.textContent = '✓ COPIED';
+    btn.style.color = 'var(--neon-green)';
+    btn.style.borderColor = 'var(--neon-green)';
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.style.color = 'var(--dim)';
+      btn.style.borderColor = 'var(--border)';
+    }, 2000);
+  });
+}
+
+// ── Download submission.json ──────────────────────────────────────────────────
+function downloadJSON() {
+  if (!lastResult) return;
+  const payload = buildPayload(lastResult.assignments);
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'submission.json'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function renderCosts(r){
+  ['cc-tot','cc-rout','cc-fail'].forEach(id=>document.getElementById(id).classList.add('vis'));
+  document.getElementById('v-tot').textContent  = `₹${(r.tot||r.total_cost||0).toFixed(2)}`;
+  document.getElementById('v-rout').textContent = `₹${(r.rout||r.routed_cost||0).toFixed(2)}`;
+  document.getElementById('v-fail').textContent = `₹${(r.fail||r.failure_cost||0).toFixed(2)}`;
+}
+
+function renderGantt(asgns){
+  const routed=asgns.filter(a=>!a.failed);
+  const ge=document.getElementById('gantt-empty');
+  const gc=document.getElementById('gantt');
+  if(!routed.length){ge.style.display='block';gc.innerHTML='';return;}
+  ge.style.display='none';
+  const maxT=Math.max(...routed.map(a=>a._settle))+1;
+  const sc=v=>(v/maxT*100).toFixed(2)+'%';
+  const byC={Channel_F:[],Channel_S:[],Channel_B:[]};
+  routed.forEach(a=>byC[a.channel_id].push(a));
+  gc.innerHTML=CHS.map(ch=>{
+    const blocks=byC[ch].map(a=>{
+      const color=CHC[a.channel_id];
+      return `<div class="g-blk" style="left:${sc(a.start_time)};width:${sc(LAT[a.channel_id])};background:${color};opacity:0.82">
+        <span style="color:#000;font-size:0.48rem;font-weight:700;overflow:hidden;white-space:nowrap;padding:0 2px">${a.tx_id}</span>
+        <div class="tip">${a.tx_id} · ${a.channel_id.replace('Channel_','CH_')}<br>t=${a.start_time}→${a._settle} · delay:${a._delay}min · ₹${a._cost.toFixed(2)}</div>
+      </div>`;
+    }).join('');
+    return `<div class="g-row"><div class="g-lbl">${ch.replace('Channel_','CH_')}</div><div class="g-tl">${blocks}</div></div>`;
+  }).join('');
+}
+
+function renderAsgn(asgns){
+  const empty=document.getElementById('asgn-empty');
+  const tbl=document.getElementById('asgn-table');
+  const body=document.getElementById('asgn-body');
+  if(!asgns.length){empty.style.display='block';tbl.style.display='none';return;}
+  empty.style.display='none';tbl.style.display='table';
+  const sorted=[...asgns].sort((a,b)=>a.tx_id.localeCompare(b.tx_id,undefined,{numeric:true}));
+  body.innerHTML=sorted.map(a=>{
+    if(a.failed)return`<tr><td style="color:var(--neon-cyan)">${a.tx_id}</td><td colspan="3" style="color:var(--dim)">—</td><td style="color:var(--neon-red)">₹${a._cost.toFixed(2)}</td><td><span class="badge bf">FAILED</span></td></tr>`;
+    const ch=a.channel_id.replace('Channel_','CH_');
+    const col=CHC[a.channel_id];
+    return`<tr><td style="color:var(--neon-cyan)">${a.tx_id}</td><td style="color:${col}">${ch}</td><td>t=${a.start_time}</td><td>${a._delay}min</td><td>₹${a._cost.toFixed(2)}</td><td><span class="badge br">ROUTED</span></td></tr>`;
+  }).join('');
+}
+
+// ── Theme toggle ──────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light');
+  document.getElementById('theme-btn').textContent = isLight ? '🌑' : '🌙';
+  localStorage.setItem('ss-theme', isLight ? 'light' : 'dark');
+}
+
+// Restore saved preference on load
+(function(){
+  const saved = localStorage.getItem('ss-theme');
+  const sys   = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  if (saved === 'light' || (!saved && sys)) {
+    document.body.classList.add('light');
+    document.getElementById('theme-btn').textContent = '🌑';
+  }
+})();
+
+// ── Scroll reveal ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.rv').forEach(el=>{
+  new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('vis')})},{threshold:0.1}).observe(el);
+});
+</script>
+</body>
+</html>

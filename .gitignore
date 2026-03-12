@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+venv/
+.venv/
+.env
+
+# Project specific
+output/
+temp/
+.DS_Store
