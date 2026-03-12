@@ -235,7 +235,7 @@
   #algorithm { background:var(--bg2); border-top:1px solid var(--border); border-bottom:1px solid var(--border); transition:background 0.5s ease, border-color 0.5s ease; }
   .algo-grid { display:grid; grid-template-columns:1fr 1fr; gap:72px; align-items:start; margin-top:64px; }
   .steps { display:flex; flex-direction:column; }
-  .step { display:flex; gap:24px; padding:24px 0; border-bottom:1px solid rgba(0,245,255,0.055); }
+  .step { display:flex; gap:24px; padding:24px 0; border-bottom:1px solid rgba(0,245,255,0.055); align-items:flex-start; }
   .step:last-child { border-bottom:none; }
   .step-n { font-family:var(--display); font-size:2.5rem; font-weight:900; color:rgba(0,245,255,0.1); line-height:1; min-width:52px; flex-shrink:0; transition:color 0.3s,text-shadow 0.3s; }
   .step:hover .step-n { color:var(--neon-cyan); text-shadow:0 0 20px var(--neon-cyan); }
@@ -512,9 +512,10 @@
         </div>
       </div>
 
-      <div class="formula-panel rv" style="transition-delay:0.15s">
-        <div class="fp-title">// cost_model.py</div>
-        <div class="fp-block">
+      <div class="rv" style="transition-delay:0.15s">
+        <div class="formula-panel">
+          <div class="fp-title">// cost_model.py</div>
+          <div class="fp-block">
 <span class="fc"># Per settled transaction</span>
 <span class="fv">delay</span>         <span class="fo">=</span> <span class="fk">start_time</span> <span class="fo">−</span> <span class="fk">arrival_time</span>
 <span class="fv">delay_penalty</span> <span class="fo">=</span> <span class="fn">0.001</span> <span class="fo">×</span> amount <span class="fo">×</span> delay
@@ -525,17 +526,18 @@
 
 <span class="fc"># Judge metric (minimize this)</span>
 <span class="fv">total_cost</span>    <span class="fo">=</span> Σ(tx_cost) <span class="fo">+</span> Σ(fail_cost)
-        </div>
-        <div class="fp-block">
+          </div>
+          <div class="fp-block">
 <span class="fc"># Sort key (descending)</span>
 <span class="fv">score</span>  <span class="fo">=</span> priority    <span class="fo">×</span> <span class="fn">10</span>
        <span class="fo">+</span> (<span class="fn">1</span><span class="fo">/</span>max_delay) <span class="fo">×</span>  <span class="fn">8</span>
        <span class="fo">+</span> (amount<span class="fo">/</span><span class="fn">20000</span>) <span class="fo">×</span>  <span class="fn">2</span>
-        </div>
-        <div class="fp-note">
-          Complexity: <strong style="color:var(--text-bright)">O(n log n)</strong> sort + O(n·k·c) slot search<br>
-          k = 3 channels &nbsp;|&nbsp; c = concurrent slots<br>
-          Handles 1000-tx stress datasets in milliseconds.
+          </div>
+          <div class="fp-note">
+            Complexity: <strong style="color:var(--text-bright)">O(n log n)</strong> sort + O(n·k·c) slot search<br>
+            k = 3 channels &nbsp;|&nbsp; c = concurrent slots<br>
+            Handles 1000-tx stress datasets in milliseconds.
+          </div>
         </div>
       </div>
     </div>
