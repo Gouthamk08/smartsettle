@@ -1,7 +1,7 @@
-echo "Flask==3.1.2
+Flask==3.1.2
 gunicorn
 pandas==2.3.3
 numpy==2.4.3
 matplotlib==3.10.8
 seaborn==0.13.2
-plotly==6.6.0" > requirements.txt
+plotly==6.6.0
