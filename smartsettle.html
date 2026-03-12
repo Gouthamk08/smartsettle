@@ -721,7 +721,7 @@ async function pingFlask() {
   dot.style.background = 'var(--neon-orange)';
   msg.textContent = 'Checking...';
   try {
-    const res = await fetch('http://localhost:5000/api/health', { signal: AbortSignal.timeout(3000) });
+    const res = await fetch('/api/health', { signal: AbortSignal.timeout(3000) });
     const data = await res.json();
     if (data.status === 'ok') {
       dot.style.background = 'var(--neon-green)';
@@ -945,7 +945,7 @@ async function runOpt() {
 }
 
 async function runViaFlask() {
-  const res = await fetch('http://localhost:5000/api/optimize', {
+  const res = await fetch('/api/optimize', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ transactions: TXS })
