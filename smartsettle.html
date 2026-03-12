@@ -183,7 +183,8 @@
     border-top:1px solid var(--border); background:rgba(0,0,0,0.55);
     height:36px; overflow:hidden; animation:fadeUp 0.8s ease 0.5s both;
   }
-  .ticker-inner { display:flex; align-items:center; gap:48px; padding:0 24px; height:100%; white-space:nowrap; animation:tick 22s linear infinite; }
+  .ticker-inner { display:flex; align-items:center; padding:0; height:100%; white-space:nowrap; animation:tick 22s linear infinite; }
+  .ticker-inner > * { margin-right: 48px; }
   .ti { font-family:var(--mono); font-size:0.67rem; display:flex; gap:12px; align-items:center; flex-shrink:0; }
   .tl { color:var(--dim); letter-spacing:0.1em; }
   .tv { color:var(--neon-cyan); }
@@ -440,7 +441,7 @@
       <div class="ti"><span class="tl">CHANNEL_B</span><span class="tv">₹0.20 · 10 min · Cap 10</span></div><span class="ts">|</span>
       <div class="ti"><span class="tl">DELAY PENALTY</span><span class="tv">P = 0.001 × amount × delay</span></div><span class="ts">|</span>
       <div class="ti"><span class="tl">FAILURE PENALTY</span><span class="tv">F = 0.5 × amount</span></div><span class="ts">|</span>
-      <div class="ti"><span class="tl">OBJECTIVE</span><span class="tv">Minimize total_system_cost</span></div>
+      <div class="ti"><span class="tl">OBJECTIVE</span><span class="tv">Minimize total_system_cost</span></div><span class="ts">|</span>
     </div>
   </div>
 </section>
