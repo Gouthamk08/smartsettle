@@ -649,7 +649,10 @@
         <div class="asgn-wrap rv" style="transition-delay:0.2s">
           <div class="panel-head" style="margin-bottom:12px">
             <span>Assignments</span>
-            <button id="dl-btn" onclick="downloadJSON()" style="display:none;font-family:var(--mono);font-size:0.6rem;letter-spacing:0.1em;background:rgba(0,255,136,0.1);border:1px solid var(--neon-green);color:var(--neon-green);padding:4px 12px;cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='rgba(0,255,136,0.2)'" onmouseout="this.style.background='rgba(0,255,136,0.1)'">⬇ submission.json</button>
+            <div style="display:flex;gap:8px">
+              <button id="retry-btn" onclick="retryFailed()" style="display:none;font-family:var(--mono);font-size:0.6rem;letter-spacing:0.1em;background:rgba(255,45,85,0.1);border:1px solid var(--neon-red);color:var(--neon-red);padding:4px 12px;cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='rgba(255,45,85,0.2)'" onmouseout="this.style.background='rgba(255,45,85,0.1)'">↺ RETRY FAILED</button>
+              <button id="dl-btn" onclick="downloadJSON()" style="display:none;font-family:var(--mono);font-size:0.6rem;letter-spacing:0.1em;background:rgba(0,255,136,0.1);border:1px solid var(--neon-green);color:var(--neon-green);padding:4px 12px;cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='rgba(0,255,136,0.2)'" onmouseout="this.style.background='rgba(0,255,136,0.1)'">⬇ submission.json</button>
+            </div>
           </div>
           <div class="empty" id="asgn-empty"><div class="ei">◉</div>Awaiting optimization</div>
           <table id="asgn-table" style="display:none">
@@ -873,6 +876,20 @@ function earliest(ch,arrival,maxD,booked){
   return null;
 }
 
+function retryFailed() {
+  if (!lastResult) return;
+  const failedIds = new Set(lastResult.assignments.filter(a => a.failed).map(a => a.tx_id));
+  if (failedIds.size === 0) { alert('No failed transactions to retry.'); return; }
+
+  // Filter global TXS to only those that failed
+  TXS = TXS.filter(t => failedIds.has(t.tx_id));
+  
+  // Update UI inputs
+  renderCSVTable();
+  renderManualTable();
+  runOpt();
+}
+
 function optimize(){
   const sorted=[...TXS].sort((a,b)=>score(b)-score(a));
   const booked={Channel_F:[],Channel_S:[],Channel_B:[]};
@@ -955,6 +972,7 @@ async function runViaFlask() {
   renderAsgn(assignments);
   renderJSON(assignments);
   document.getElementById('dl-btn').style.display = 'inline-block';
+  document.getElementById('retry-btn').style.display = data.failure_cost > 0 ? 'inline-block' : 'none';
 
   if (data.violations && data.violations.length) {
     console.warn('Violations:', data.violations);
@@ -1070,7 +1088,7 @@ function renderAsgn(asgns){
   empty.style.display='none';tbl.style.display='table';
   const sorted=[...asgns].sort((a,b)=>a.tx_id.localeCompare(b.tx_id,undefined,{numeric:true}));
   body.innerHTML=sorted.map(a=>{
-    if(a.failed)return`<tr><td style="color:var(--neon-cyan)">${a.tx_id}</td><td colspan="3" style="color:var(--dim)">—</td><td style="color:var(--neon-red)">₹${a._cost.toFixed(2)}</td><td><span class="badge bf">FAILED</span></td></tr>`;
+    if(a.failed)return`<tr style="background:rgba(255,45,85,0.05)"><td style="color:var(--neon-cyan)">${a.tx_id}</td><td colspan="3" style="color:var(--dim);text-align:center;letter-spacing:0.1em;font-size:0.7em">⚠ NOT ROUTED</td><td style="color:var(--neon-red)">₹${a._cost.toFixed(2)}</td><td><span class="badge bf">FAILED</span></td></tr>`;
     const ch=a.channel_id.replace('Channel_','CH_');
     const col=CHC[a.channel_id];
     return`<tr><td style="color:var(--neon-cyan)">${a.tx_id}</td><td style="color:${col}">${ch}</td><td>t=${a.start_time}</td><td>${a._delay}min</td><td>₹${a._cost.toFixed(2)}</td><td><span class="badge br">ROUTED</span></td></tr>`;
